@@ -71,15 +71,107 @@ python -c "from mcp_weather_tool import GoogleWeatherTool; print('Installation s
 
 ## Usage
 
-The package provides the `GoogleWeatherTool` class that can be imported and used in MCP Server applications:
+### MCP Server Integration
+
+The primary use case for this package is as a tool within an MCP Server. Add the GoogleWeatherTool to your MCP server configuration:
+
+#### Configuration Example (`config/tools.yaml`)
+
+```yaml
+Domains:
+  - Name: WEATHER
+    Description: Weather information tools
+
+mcp_classes:
+  - Domain: WEATHER
+    class_type: mcp_weather_tool.GoogleWeatherTool
+    class_name: google_weather
+    class_description: Google Weather API integration
+    class_initialization_params:
+      params:
+        api_key: "${GOOGLE_WEATHER_API_KEY}"
+        geocoding_api_key: "${GOOGLE_MAPS_API_KEY}"
+        unitsSystem: "imperial"
+        language: "en"
+        base_url: "https://weather.googleapis.com/v1"
+    tools:
+      - function: current_conditions
+        function_description: Get current weather conditions
+        tool_parameters:
+          - name: latitude
+            description: Latitude coordinate
+            allowed_values: string
+          - name: longitude
+            description: Longitude coordinate
+            allowed_values: string
+          - name: unitsSystem
+            description: Unit system (imperial/metric)
+            allowed_values: ["imperial", "metric"]
+          - name: language
+            description: Language code
+            allowed_values: string
+      - function: hourly_forecast
+        function_description: Get hourly weather forecast
+        tool_parameters:
+          - name: latitude
+            description: Latitude coordinate
+            allowed_values: string
+          - name: longitude
+            description: Longitude coordinate
+            allowed_values: string
+          - name: hours
+            description: Number of hours (max 48)
+            allowed_values: number
+      - function: daily_forecast
+        function_description: Get daily weather forecast
+        tool_parameters:
+          - name: latitude
+            description: Latitude coordinate
+            allowed_values: string
+          - name: longitude
+            description: Longitude coordinate
+            allowed_values: string
+          - name: days
+            description: Number of days (max 10)
+            allowed_values: number
+```
+
+#### Environment Variables
+
+Set up required environment variables:
+
+```bash
+# Windows
+set GOOGLE_WEATHER_API_KEY=your-google-weather-api-key
+set GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+
+# Linux/macOS
+export GOOGLE_WEATHER_API_KEY=your-google-weather-api-key
+export GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+```
+
+#### Running with MCP Server
+
+```bash
+# Install MCP server (if not already installed)
+pip install mcp-server
+
+# Run MCP server with your configuration
+python -m mcp_server --config config/tools.yaml
+```
+
+### Direct Python Usage
+
+For standalone usage or testing, you can also use the tool directly:
 
 ```python
 from mcp_weather_tool import GoogleWeatherTool
+from mcp_weather_tool.enhanced_base import ToolConfig
 
 # Initialize with API configuration
-config = {
-    "name": "google_weather",
-    "params": {
+config = ToolConfig(
+    name="google_weather",
+    params={
         "api_key": "your-google-weather-api-key",
         "unitsSystem": "imperial",
         "language": "en",
@@ -87,9 +179,19 @@ config = {
         "geocoding_api_key": "your-google-maps-api-key",
         "base_url": "https://weather.googleapis.com/v1"
     }
-}
+)
 
 weather_tool = GoogleWeatherTool(config)
+
+# Example usage
+import asyncio
+
+async def example():
+    result = await weather_tool.invoke("current_conditions", latitude=37.7749, longitude=-122.4194)
+    print(result)
+
+# Run the example
+asyncio.run(example())
 ```
 
 ## Requirements
